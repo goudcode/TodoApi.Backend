@@ -1,5 +1,9 @@
-﻿namespace Goudcode.TodoApi.Backend.Model
+﻿using Microsoft.EntityFrameworkCore;
+using System;
+
+namespace Goudcode.TodoApi.Backend.Model
 {
+    [Index(nameof(Username), IsUnique = true)]
     public class UserModel
     {
         public Guid Id { get; set; }

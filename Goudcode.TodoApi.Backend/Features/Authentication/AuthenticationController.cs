@@ -29,10 +29,10 @@ namespace Goudcode.TodoApi.Backend.Usecases.Authentication
 
             user.Username = req.Username.ToLower();
             user.Password = hasher.HashPassword(user, req.Password);
-           
+
             ctx.Add(user);
             await ctx.SaveChangesAsync();
-            
+
             return Results.Ok();
         }
 
@@ -63,13 +63,14 @@ namespace Goudcode.TodoApi.Backend.Usecases.Authentication
 
             // Generate Token
             var securityKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(config["Jwt:Key"] ?? 
+                Encoding.UTF8.GetBytes(config["Jwt:Key"] ??
                 throw new Exception("Jwt Key Not configured")));
             var signingCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, existingUser.Username)
+                new Claim(IdentityData.UsernameClaimName, existingUser.Username),
+                new Claim(IdentityData.UserIdClaimName, existingUser.Id.ToString())
             };
 
             if (existingUser.IsAdmin)
