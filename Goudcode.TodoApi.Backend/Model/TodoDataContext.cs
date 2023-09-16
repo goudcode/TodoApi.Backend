@@ -15,9 +15,9 @@ namespace Goudcode.TodoApi.Backend.Model
         {
             base.OnConfiguring(optionsBuilder);
 
-            optionsBuilder.UseSqlite(
+            optionsBuilder.UseNpgsql(
                 configuration.GetConnectionString("TodoDatabase") ??
-                "Data Source=todoapi.db");
+                throw new Exception("Connection string TodoDatabase not set."));
         }
 
         public DbSet<UserModel> Users { get; set; }
