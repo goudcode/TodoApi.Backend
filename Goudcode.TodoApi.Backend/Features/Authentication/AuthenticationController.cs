@@ -1,4 +1,5 @@
-﻿using Goudcode.TodoApi.Backend.Features.Authentication.Dto;
+﻿using Goudcode.TodoApi.Backend.Features.Authentication;
+using Goudcode.TodoApi.Backend.Features.Authentication.Dto;
 using Goudcode.TodoApi.Backend.Model;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -66,10 +67,13 @@ namespace Goudcode.TodoApi.Backend.Usecases.Authentication
                 throw new Exception("Jwt Key Not configured")));
             var signingCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
+            var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, existingUser.Username)
             };
+
+            if (existingUser.IsAdmin)
+                claims.Add(new Claim(IdentityData.AdminUserClaimName, "true"));
 
             var token = new JwtSecurityToken(
                 config["Jwt:Issuer"],

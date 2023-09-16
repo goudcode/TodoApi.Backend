@@ -1,5 +1,7 @@
+using Goudcode.TodoApi.Backend.Features.Authentication;
 using Goudcode.TodoApi.Backend.Model;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -24,6 +26,14 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+services.AddAuthorization(opts =>
+{
+    opts.AddPolicy(IdentityData.AdminUserPolicyName, policy =>
+    {
+        policy.RequireClaim(IdentityData.AdminUserClaimName, "true");
+    });
+});
+
 services.AddDbContext<TodoDataContext>();
 services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -41,7 +51,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
+
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
