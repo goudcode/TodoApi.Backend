@@ -21,5 +21,6 @@ namespace Goudcode.TodoApi.Backend.Model
         }
 
         public DbSet<UserModel> Users { get; set; }
+        public DbSet<CollectionModel> Collections { get; set; }
     }
 }
