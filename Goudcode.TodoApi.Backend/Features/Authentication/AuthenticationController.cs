@@ -1,91 +1,50 @@
-﻿using Goudcode.TodoApi.Backend.Features.Authentication;
-using Goudcode.TodoApi.Backend.Features.Authentication.Dto;
+﻿using Goudcode.TodoApi.Backend.Features.Authentication.Dto;
+using Goudcode.TodoApi.Backend.Features.Authentication.Exceptions;
 using Goudcode.TodoApi.Backend.Model;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
-namespace Goudcode.TodoApi.Backend.Usecases.Authentication
+namespace Goudcode.TodoApi.Backend.Features.Authentication
 {
     [ApiController]
     [Route("[controller]")]
     public class AuthenticationController
     {
+        private readonly IAuthenticationService _authenticationService;
+
+        public AuthenticationController(IAuthenticationService authenticationService)
+        {
+            _authenticationService = authenticationService;
+        }
+
         [HttpPost("Register")]
         public async Task<IResult> Register(RegistrationRequest req, TodoDataContext ctx)
         {
-            // Check if user already exists
-            var existingUser = await ctx.Users.FirstOrDefaultAsync(user => user.Username == req.Username.ToLower());
-            if (existingUser is not null)
+            try
+            {
+                await _authenticationService.RegisterNewUser(
+                    req.Username, req.Password);
+                return Results.Ok();
+            }
+            catch (UsernameAlreadyExistsException)
+            {
                 return Results.BadRequest("Username already in use");
-
-            // Create user with secure password hash
-            var user = new UserModel();
-            var hasher = new PasswordHasher<UserModel>();
-
-            user.Username = req.Username.ToLower();
-            user.Password = hasher.HashPassword(user, req.Password);
-
-            ctx.Add(user);
-            await ctx.SaveChangesAsync();
-
-            return Results.Ok();
+            }
         }
 
         [HttpPost("Login")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LoginResponse))]
         public async Task<IResult> Login(LoginRequest req, TodoDataContext ctx, IConfiguration config)
         {
-            // Check if user exists
-            var existingUser = await ctx.Users.FirstOrDefaultAsync(user => user.Username == req.Username.ToLower());
-            if (existingUser is null)
-                return Results.BadRequest("Invalid Login");
-
-            // Hash password
-            var hasher = new PasswordHasher<UserModel>();
-            var hashResult = hasher.VerifyHashedPassword(existingUser, existingUser.Password, req.Password);
-
-            // Verify password
-            if (hashResult == PasswordVerificationResult.Failed)
-                return Results.BadRequest("Invalid Login");
-
-            // Rehash password if needed
-            if (hashResult == PasswordVerificationResult.SuccessRehashNeeded)
-            {
-                var newPasswordHash = hasher.HashPassword(existingUser, req.Password);
-                existingUser.Password = newPasswordHash;
-                await ctx.SaveChangesAsync();
-            }
-
-            // Generate Token
-            var securityKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(config["Jwt:Key"] ??
-                throw new Exception("Jwt Key Not configured")));
-            var signingCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-            var claims = new List<Claim>
-            {
-                new Claim(IdentityData.UsernameClaimName, existingUser.Username),
-                new Claim(IdentityData.UserIdClaimName, existingUser.Id.ToString())
-            };
-
-            if (existingUser.IsAdmin)
-                claims.Add(new Claim(IdentityData.AdminUserClaimName, "true"));
-
-            var token = new JwtSecurityToken(
-                config["Jwt:Issuer"],
-                config["Jwt:Issuer"],
-                claims,
-                expires: DateTime.Now.AddMinutes(120),
-                signingCredentials: signingCredentials);
+            var authenticationResult = await _authenticationService
+                .VerifyAuthentication(req.Username, req.Password);
+            if (!authenticationResult.IsAuthenticated)
+                return Results.BadRequest("Authentication failed.");
 
             var response = new LoginResponse
             {
-                JwtToken = new JwtSecurityTokenHandler().WriteToken(token)
+                JwtToken = authenticationResult.JwtBearer
             };
 
             return Results.Ok(response);

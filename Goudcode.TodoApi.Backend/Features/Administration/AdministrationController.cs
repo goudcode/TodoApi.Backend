@@ -1,9 +1,7 @@
 ﻿using Goudcode.TodoApi.Backend.Features.Administration.Dto;
 using Goudcode.TodoApi.Backend.Features.Authentication;
-using Goudcode.TodoApi.Backend.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Goudcode.TodoApi.Backend.Features.Administration
 {
@@ -12,16 +10,23 @@ namespace Goudcode.TodoApi.Backend.Features.Administration
     [Route("[controller]")]
     public class AdministrationController
     {
+        private readonly IAdministrationService _administrationService;
+
+        public AdministrationController(IAdministrationService administrationService)
+        {
+            _administrationService = administrationService;
+        }
+        
         [HttpGet]
         [Route("Users")]
-        public async Task<IResult> GetUsers(TodoDataContext ctx)
+        public async Task<IResult> GetUsers()
         {
-            var users = await ctx.Users.
-                Select(user => new UserResponse()
+            var users = (await _administrationService.GetUsers())
+                .Select(user => new UserResponse()
                 {
                     Id = user.Id,
                     Username = user.Username
-                }).ToListAsync();
+                });
 
             return Results.Ok(users);
         }

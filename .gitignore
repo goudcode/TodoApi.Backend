@@ -368,3 +368,4 @@ MigrationBackup/
 FodyWeavers.xsd
 .idea/
 Goudcode.TodoApi.Backend/appsettings.json
+Development/data

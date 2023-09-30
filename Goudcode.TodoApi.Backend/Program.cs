@@ -2,11 +2,12 @@ using Goudcode.TodoApi.Backend.Features.Authentication;
 using Goudcode.TodoApi.Backend.Model;
 using Goudcode.TodoApi.Backend.Swagger;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
+using Goudcode.TodoApi.Backend.Features.Administration;
+using AdministrationService = Goudcode.TodoApi.Backend.Features.Administration.AdministrationService;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -38,6 +39,9 @@ services.AddAuthorization(opts =>
 });
 
 services.AddDbContext<TodoDataContext>();
+services.AddTransient<IAdministrationService, AdministrationService>();
+services.AddTransient<IAuthenticationService, AuthenticationService>();
+
 services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 services.AddEndpointsApiExplorer();
