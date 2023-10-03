@@ -14,39 +14,50 @@ namespace Goudcode.TodoApi.Backend.Features.Collections
     [Route("[controller]")]
     public class CollectionController : ControllerBase
     {
+        private readonly ICollectionService _collectionService;
+
+        public CollectionController(ICollectionService collectionService)
+        {
+            _collectionService = collectionService;
+        }
+
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<CollectionResponse>))]
         public async Task<IResult> GetAll(TodoDataContext ctx)
         {
             var userId = User.FindFirstValue(IdentityData.UserIdClaimName);
             if (userId is null)
                 return Results.Forbid();
 
-            var collections = await ctx.Collections
-                .Where(collection => collection.UserId.ToString() == userId)
-                .ToListAsync();
+            var collections = (await _collectionService
+                .GetCollectionsByUser(new Guid(userId)))
+                .Select(collection => new CollectionResponse()
+                {
+                    Id = collection.Id,
+                    Name = collection.Name,
+                    Description = collection.Description
+                });
 
             return Results.Ok(collections);
         }
 
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CollectionResponse))]
         public async Task<IResult> Create(CreateCollectionRequest req, TodoDataContext ctx)
         {
             var userId = User.FindFirstValue(IdentityData.UserIdClaimName);
             if (userId is null)
                 return Results.Forbid();
 
-            var userGuid = new Guid(userId);
-            var collectionModel = new CollectionModel
+            var collection = await _collectionService.CreateCollection(
+                req.Name, req.Description, new Guid(userId));
+
+            return Results.Ok(new CollectionResponse()
             {
-                Name = req.Name,
-                Description = req.Description,
-                UserId = userGuid
-            };
-
-            ctx.Collections.Add(collectionModel);
-            await ctx.SaveChangesAsync();
-
-            return Results.Ok(collectionModel);
+                Id = collection.Id,
+                Name = collection.Name,
+                Description = collection.Description
+            });
         }
     }
 }

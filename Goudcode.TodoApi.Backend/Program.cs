@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
 using Goudcode.TodoApi.Backend.Features.Administration;
+using Goudcode.TodoApi.Backend.Features.Collections;
 using AdministrationService = Goudcode.TodoApi.Backend.Features.Administration.AdministrationService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,15 +33,14 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 services.AddAuthorization(opts =>
 {
-    opts.AddPolicy(IdentityData.AdminUserPolicyName, policy =>
-    {
-        policy.RequireClaim(IdentityData.AdminUserClaimName, "true");
-    });
+    opts.AddPolicy(IdentityData.AdminUserPolicyName,
+        policy => { policy.RequireClaim(IdentityData.AdminUserClaimName, "true"); });
 });
 
 services.AddDbContext<TodoDataContext>();
 services.AddTransient<IAdministrationService, AdministrationService>();
 services.AddTransient<IAuthenticationService, AuthenticationService>();
+services.AddTransient<ICollectionService, CollectionService>();
 
 services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
